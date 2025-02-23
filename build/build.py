@@ -19,6 +19,7 @@
 #
 
 import csv
+import pathlib
 import os
 import sys
 
@@ -61,8 +62,47 @@ def _load_excel(path: str) -> list:
     return rows
 
 
+def _add_device(f, row):
+    column_count = 14
+
+    if len(row) != column_count:
+        return
+
+    frequencies_column = 7
+    frequencies = row[frequencies_column]
+
+    if not frequencies:
+        return
+
+    suffixes = (
+        'МГц',
+        'ГГц',
+        'кГц',
+        'КГц',  # casing is wrong
+        'KГц',  # first letter is latin
+        'MГц',  # first letter is latin
+    )
+
+    for suffix in suffixes:
+        if suffix in frequencies:
+            f.write(', '.join(row))  # TODO: proper format
+            return
+
+    # TODO: support very bogus case with no suffix at all
+    print(row)
+
+
 def _process(rows: list):
-    print(len(rows))
+    self_path = pathlib.Path(__file__)
+    output_path = self_path.parent.parent / 'dist/devices.js'
+
+    with open(output_path, 'w') as f:
+        # TODO: header
+
+        for row in rows:
+            _add_device(f, row)
+
+        # TODO: footer
 
 
 def _main():
