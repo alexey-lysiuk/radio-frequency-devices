@@ -1,3 +1,4 @@
 /.idea/
+/dist/devices.js
 *.xlsx
 *.csv
