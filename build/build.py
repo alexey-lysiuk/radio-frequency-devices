@@ -19,9 +19,11 @@
 #
 
 import csv
-import pathlib
 import os
+import pathlib
+import re
 import sys
+from decimal import Decimal
 
 sys.dont_write_bytecode = True
 
@@ -62,6 +64,55 @@ def _load_excel(path: str) -> list:
     return rows
 
 
+_frequency_suffixes = {
+    'М': Decimal('1'),
+    'Г': Decimal('1000'),
+    'к': Decimal('0.001'),
+    'К': Decimal('0.001'),  # wrong character case
+    'K': Decimal('0.001'),  # latin character
+    'M': Decimal('1')  # latin character
+}
+
+_number_pattern = r'(\d+(?:[,.]\d+)?)'
+_suffixes_string = ''.join(_frequency_suffixes.keys())
+_suffix_pattern = f'([{_suffixes_string}])Гц'
+_frequency_regexp = re.compile(fr'{_number_pattern}(?:(?:-|...){_number_pattern})?\s*{_suffix_pattern}')
+
+
+class _StrDec(Decimal):
+    def __repr__(self):
+        return str(self)
+
+
+def _tonumber(value: str, suffix: str):
+    value = value.replace(',', '.')
+    return _StrDec(Decimal(value) * _frequency_suffixes[suffix])
+
+
+def _parse_frequencies(string: str) -> list:
+    frequency_strings = [entry for entry in _frequency_regexp.findall(string)]
+    frequencies = []
+
+    for freqstr in frequency_strings:
+        suffix = freqstr[2]
+
+        # List because of string conversion to JavaScript array
+        frequency = [_tonumber(freqstr[0], suffix)]
+
+        if freqstr[1] != '':  # frequency range
+            frequency.append(_tonumber(freqstr[1], suffix))
+
+        frequencies.append(frequency)
+
+    if len(frequencies) == 0:
+        # TODO: support very bogus case with no suffix at all
+        print(string)
+    else:
+        frequencies.sort()
+
+    return frequencies
+
+
 def _add_device(f, row):
     column_count = 14
 
@@ -69,27 +120,16 @@ def _add_device(f, row):
         return
 
     frequencies_column = 7
-    frequencies = row[frequencies_column]
+    frequencies_string = row[frequencies_column]
 
-    if not frequencies:
+    if not frequencies_string:
         return
 
-    suffixes = (
-        'МГц',
-        'ГГц',
-        'кГц',
-        'КГц',  # casing is wrong
-        'KГц',  # first letter is latin
-        'MГц',  # first letter is latin
-    )
+    frequencies = _parse_frequencies(frequencies_string)
 
-    for suffix in suffixes:
-        if suffix in frequencies:
-            f.write(', '.join(row))  # TODO: proper format
-            return
-
-    # TODO: support very bogus case with no suffix at all
-    print(row)
+    if frequencies:
+        name = row[1].replace('\n', ' ').strip().replace("'", r"\'")
+        f.write(f"['{name}', {frequencies}],\n")
 
 
 def _process(rows: list):
@@ -97,12 +137,12 @@ def _process(rows: list):
     output_path = self_path.parent.parent / 'dist/devices.js'
 
     with open(output_path, 'w') as f:
-        # TODO: header
+        f.write('let devices = [\n')
 
         for row in rows:
             _add_device(f, row)
 
-        # TODO: footer
+        f.write('];\n')
 
 
 def _main():
