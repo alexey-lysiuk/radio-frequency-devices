@@ -23,4 +23,5 @@ new DataTable('#devices',
         { title: 'Range' }
     ],
     data: devices,
+    order: []
 });
