@@ -114,9 +114,10 @@ def _parse_frequencies(string: str) -> list:
 
 
 def _add_device(f, row):
-    column_count = 14
+    column_count = len(row)
 
-    if len(row) != column_count:
+    # There are two .xslx files with the same data but different number of columns
+    if column_count != 14 and column_count != 256:
         return
 
     frequencies_column = 7
