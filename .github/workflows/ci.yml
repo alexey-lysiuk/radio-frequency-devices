@@ -1,0 +1,48 @@
+name: Build and Deploy
+
+on: push
+
+permissions:
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download source data
+        run: |
+          wget -q https://github.com/${{ github.repository }}/releases/download/data/devices.7z
+          p7zip -d devices.7z
+          mv devices.xlsx.csv ref.devices.xlsx.csv
+
+      - name: Build device list
+        run: |
+          build/build.py devices.xlsx
+
+      - name: Post build checks
+        run: |
+          [ -f dist/devices.js ] || exit 1
+          diff -u ref.devices.xlsx.csv devices.xlsx.csv
+          git status
+
+      - name: Upload site files as artifact
+        if: github.ref_name == 'main'
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-24.04
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
