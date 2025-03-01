@@ -116,11 +116,7 @@ def _parse_frequencies(string: str) -> list:
 
         frequencies.append(frequency)
 
-    if len(frequencies) == 0:
-        # TODO: support very bogus case with no suffix at all
-        print(string)
-    else:
-        frequencies.sort()
+    frequencies.sort()
 
     return frequencies
 
