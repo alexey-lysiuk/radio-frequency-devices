@@ -89,7 +89,19 @@ def _tonumber(value: str, suffix: str):
     return _StrDec(Decimal(value) * _frequency_suffixes[suffix])
 
 
+def _apply_frequencies_fixes(string: str) -> str:
+    if string == '2400-2483,5\n\n\n':
+        # Missing suffix in HYUNDAI MOBIS ADB11H8EE
+        return string.replace('\n\n\n', 'МГц')
+    elif '137,585-137-825' in string:
+        # Wrong decimal separator in two ORBCOMM devices
+        return string.replace('137-825', '137,825')
+
+    return string
+
+
 def _parse_frequencies(string: str) -> list:
+    string = _apply_frequencies_fixes(string)
     frequency_strings = [entry for entry in _frequency_regexp.findall(string)]
     frequencies = []
 
