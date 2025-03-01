@@ -121,6 +121,24 @@ def _parse_frequencies(string: str) -> list:
     return frequencies
 
 
+def _format_multiline_string(source: str):
+    if not source:
+        return ''
+
+    string = source.strip()
+    string = string.replace('---', '')
+    string = re.sub(r'\n\n+', '\n', string)
+    string = string.replace('\n', '<br>')
+    return string.replace("'", r"\'")
+
+
+class Column:
+    NAME = 1
+    TECHNOLOGY = 5
+    PURPOSE = 6
+    FREQUENCIES = 7
+
+
 def _add_device(f, row):
     column_count = len(row)
 
@@ -128,8 +146,7 @@ def _add_device(f, row):
     if column_count != 14 and column_count != 256:
         return
 
-    frequencies_column = 7
-    frequencies_string = row[frequencies_column]
+    frequencies_string = row[Column.FREQUENCIES]
 
     if not frequencies_string:
         return
@@ -137,8 +154,11 @@ def _add_device(f, row):
     frequencies = _parse_frequencies(frequencies_string)
 
     if frequencies:
-        name = row[1].replace('\n', ' ').strip().replace("'", r"\'")
-        f.write(f"['{name}', {frequencies}],\n")
+        name = row[Column.NAME].replace('\n', ' ').strip().replace("'", r"\'")
+        technology = _format_multiline_string(row[Column.TECHNOLOGY])
+        purpose = _format_multiline_string(row[Column.PURPOSE])
+
+        f.write(f"['{name}', '{technology}', '{purpose}', {frequencies}],\n")
 
 
 def _process(rows: list):

@@ -1,7 +1,12 @@
 
+const columns =
+{
+    frequencies: 3,
+}
+
 for (let device of devices)
 {
-    for (let frequency of device[1])
+    for (let frequency of device[columns.frequencies])
     {
         frequency.toString = function ()
         {
@@ -9,7 +14,7 @@ for (let device of devices)
         }
     }
 
-    device[1].toString = function ()
+    device[columns.frequencies].toString = function ()
     {
         return this.join('<br>');
     }
@@ -19,8 +24,10 @@ new DataTable('#devices',
 {
     columns:
     [
-        { title: 'Name' },
-        { title: 'Range' }
+        { title: 'Назва та тип РЕЗ або ВП, найменування виробника' },
+        { title: 'Радіотехнології' },
+        { title: 'Призначення' },
+        { title: 'Смуги радіочастот' }
     ],
     data: devices,
     order: []
