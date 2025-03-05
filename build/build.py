@@ -103,15 +103,68 @@ class Column:
     FREQUENCIES = 7
 
 
+class ValuePool(dict):
+    def __missing__(self, key):
+        value = len(self)
+        self[key] = value
+        return value
+
+    def write(self, f, name):
+        f.write(f'{name}=[\n')
+
+        for key in self.keys():
+            f.write(f"'{key}',\n")
+
+        f.write('];\n')
+
+
 class Device:
+    _technologies = ValuePool()
+    _purposes = ValuePool()
+    _frequencies = ValuePool()
+
     def __init__(self, name: str, technology: str, purpose: str, frequencies: list):
         self.name = name.replace('\n', ' ').strip().replace("'", r"\'")
-        self.technology = _format_multiline_string(technology)
-        self.purpose = _format_multiline_string(purpose)
-        self.frequencies = frequencies
+
+        technology = _format_multiline_string(technology)
+        self.technology = Device._technologies[technology]
+
+        purpose = _format_multiline_string(purpose)
+        self.purpose = Device._purposes[purpose]
+
+        frequency_values = []
+
+        for frequency in frequencies:
+            frequency_key = tuple(frequency)
+            frequency_value = Device._frequencies[frequency_key]
+            frequency_values.append(frequency_value)
+
+        self.frequencies = frequency_values
 
     def write(self, f):
-        f.write(f"['{self.name}', '{self.technology}', '{self.purpose}', {self.frequencies}],\n")
+        f.write(f"['{self.name}',t[{self.technology}],p[{self.purpose}],[")
+
+        for frequency in self.frequencies:
+            f.write(f'f[{frequency}],')
+
+        f.write(']],\n')
+
+    @staticmethod
+    def write_pools(f):
+        Device._technologies.write(f, 't')
+        Device._purposes.write(f, 'p')
+
+        f.write(f'f=[\n')
+
+        for frequency in Device._frequencies:
+            f.write(f'[{frequency[0]}')
+
+            if len(frequency) > 1:
+                f.write(f',{frequency[1]}')
+
+            f.write('],')
+
+        f.write('];\n')
 
 
 class DeviceList:
@@ -127,6 +180,8 @@ class DeviceList:
         output_path = self_path.parent.parent / 'dist/devices.js'
 
         with open(output_path, 'w') as f:
+            Device.write_pools(f)
+
             f.write('let devices = [\n')
 
             for device in self.devices:
