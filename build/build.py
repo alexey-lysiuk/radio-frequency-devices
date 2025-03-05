@@ -71,12 +71,17 @@ def _parse_frequencies(string: str) -> list:
 
     for freqstr in frequency_strings:
         unit_prefix = freqstr[2]
-
-        # List because of string conversion to JavaScript array
-        frequency = [_tonumber(freqstr[0], unit_prefix)]
+        start = _tonumber(freqstr[0], unit_prefix)
+        frequency = [start]
 
         if freqstr[1] != '':  # frequency range
-            frequency.append(_tonumber(freqstr[1], unit_prefix))
+            end = _tonumber(freqstr[1], unit_prefix)
+
+            if start >= end:
+                print(f'Bad frequency range, {start} >= {end}')
+                continue
+
+            frequency.append(end)
 
         frequencies.append(frequency)
 
