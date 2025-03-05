@@ -28,43 +28,7 @@ from decimal import Decimal
 sys.dont_write_bytecode = True
 
 
-def _cache_path(path: str) -> str:
-    return path + '.csv'
-
-
-def _load_cache(path: str) -> list:
-    cache_path = _cache_path(path)
-
-    if not os.path.exists(cache_path):
-        return []
-
-    source_time = os.stat(path).st_mtime
-    cache_time = os.stat(cache_path).st_mtime
-
-    if cache_time < source_time:
-        return []
-
-    with open(_cache_path(path), newline='') as f:
-        reader = csv.reader(f)
-        rows = [row for row in reader]
-
-    return rows
-
-
-def _load_excel(path: str) -> list:
-    import openpyxl
-
-    workbook = openpyxl.open(path)
-    worksheet = workbook.worksheets[0]
-    rows = [[cell.value for cell in row] for row in worksheet.rows]
-
-    with open(_cache_path(path), 'w', newline='') as f:
-        csv.writer(f).writerows(rows)
-
-    return rows
-
-
-_frequency_suffixes = {
+_unit_prefixes = {
     'М': Decimal('1'),
     'Г': Decimal('1000'),
     'к': Decimal('0.001'),
@@ -74,9 +38,9 @@ _frequency_suffixes = {
 }
 
 _number_pattern = r'(\d+(?:[,.]\d+)?)'
-_suffixes_string = ''.join(_frequency_suffixes.keys())
-_suffix_pattern = f'([{_suffixes_string}])Гц'
-_frequency_regexp = re.compile(fr'{_number_pattern}(?:(?:-|...){_number_pattern})?\s*{_suffix_pattern}')
+_unit_prefixes_string = ''.join(_unit_prefixes.keys())
+_unit_prefix_pattern = f'([{_unit_prefixes_string}])Гц'
+_frequency_regexp = re.compile(fr'{_number_pattern}(?:(?:-|...){_number_pattern})?\s*{_unit_prefix_pattern}')
 
 
 class _StrDec(Decimal):
@@ -84,14 +48,14 @@ class _StrDec(Decimal):
         return str(self)
 
 
-def _tonumber(value: str, suffix: str):
+def _tonumber(value: str, unit_prefix: str):
     value = value.replace(',', '.')
-    return _StrDec(Decimal(value) * _frequency_suffixes[suffix])
+    return _StrDec(Decimal(value) * _unit_prefixes[unit_prefix])
 
 
 def _apply_frequencies_fixes(string: str) -> str:
     if string == '2400-2483,5\n\n\n':
-        # Missing suffix in HYUNDAI MOBIS ADB11H8EE
+        # Missing units in HYUNDAI MOBIS ADB11H8EE
         return string.replace('\n\n\n', 'МГц')
     elif '137,585-137-825' in string:
         # Wrong decimal separator in two ORBCOMM devices
@@ -106,13 +70,13 @@ def _parse_frequencies(string: str) -> list:
     frequencies = []
 
     for freqstr in frequency_strings:
-        suffix = freqstr[2]
+        unit_prefix = freqstr[2]
 
         # List because of string conversion to JavaScript array
-        frequency = [_tonumber(freqstr[0], suffix)]
+        frequency = [_tonumber(freqstr[0], unit_prefix)]
 
         if freqstr[1] != '':  # frequency range
-            frequency.append(_tonumber(freqstr[1], suffix))
+            frequency.append(_tonumber(freqstr[1], unit_prefix))
 
         frequencies.append(frequency)
 
@@ -139,39 +103,87 @@ class Column:
     FREQUENCIES = 7
 
 
-def _add_device(f, row):
-    column_count = len(row)
+class Device:
+    def __init__(self, name: str, technology: str, purpose: str, frequencies: list):
+        self.name = name.replace('\n', ' ').strip().replace("'", r"\'")
+        self.technology = _format_multiline_string(technology)
+        self.purpose = _format_multiline_string(purpose)
+        self.frequencies = frequencies
 
-    # There are two .xslx files with the same data but different number of columns
-    if column_count != 14 and column_count != 256:
-        return
-
-    frequencies_string = row[Column.FREQUENCIES]
-
-    if not frequencies_string:
-        return
-
-    frequencies = _parse_frequencies(frequencies_string)
-
-    if frequencies:
-        name = row[Column.NAME].replace('\n', ' ').strip().replace("'", r"\'")
-        technology = _format_multiline_string(row[Column.TECHNOLOGY])
-        purpose = _format_multiline_string(row[Column.PURPOSE])
-
-        f.write(f"['{name}', '{technology}', '{purpose}', {frequencies}],\n")
+    def write(self, f):
+        f.write(f"['{self.name}', '{self.technology}', '{self.purpose}', {self.frequencies}],\n")
 
 
-def _process(rows: list):
-    self_path = pathlib.Path(__file__)
-    output_path = self_path.parent.parent / 'dist/devices.js'
+class DeviceList:
+    def __init__(self, path: str):
+        self.path = path
+        self.devices = []
 
-    with open(output_path, 'w') as f:
-        f.write('let devices = [\n')
+        if not self._load_cache():
+            self._load_excel()
 
-        for row in rows:
-            _add_device(f, row)
+    def export(self):
+        self_path = pathlib.Path(__file__)
+        output_path = self_path.parent.parent / 'dist/devices.js'
 
-        f.write('];\n')
+        with open(output_path, 'w') as f:
+            f.write('let devices = [\n')
+
+            for device in self.devices:
+                device.write(f)
+
+            f.write('];\n')
+
+    def _add_device(self, row: list):
+        column_count = len(row)
+
+        # There are two .xslx files with the same data but different number of columns
+        if column_count == 14 or column_count == 256:
+            if frequencies_string := row[Column.FREQUENCIES]:
+                if frequencies := _parse_frequencies(frequencies_string):
+                    device = Device(
+                        row[Column.NAME],
+                        row[Column.TECHNOLOGY],
+                        row[Column.PURPOSE],
+                        frequencies)
+                    self.devices.append(device)
+
+    def _cache_path(self) -> str:
+        return self.path + '.csv'
+
+    def _load_cache(self):
+        cache_path = self._cache_path()
+
+        if not os.path.exists(cache_path):
+            return False
+
+        source_time = os.stat(self.path).st_mtime
+        cache_time = os.stat(cache_path).st_mtime
+
+        if cache_time < source_time:
+            return False
+
+        with open(cache_path, newline='') as f:
+            reader = csv.reader(f)
+
+            for row in reader:
+                self._add_device(row)
+
+        return True
+
+    def _load_excel(self):
+        import openpyxl
+
+        workbook = openpyxl.open(self.path)
+        worksheet = workbook.worksheets[0]
+
+        with open(self._cache_path(), 'w', newline='') as f:
+            cache_writer = csv.writer(f)
+
+            for excel_row in worksheet.rows:
+                row = [cell.value for cell in excel_row]
+                cache_writer.writerow(row)
+                self._add_device(row)
 
 
 def _main():
@@ -179,9 +191,7 @@ def _main():
         print(f'Usage: {sys.argv[0]} file.xlsx')
         sys.exit(1)
 
-    path = sys.argv[1]
-    rows = _load_cache(path) or _load_excel(path)
-    _process(rows)
+    DeviceList(sys.argv[1]).export()
 
     sys.exit(0)
 
