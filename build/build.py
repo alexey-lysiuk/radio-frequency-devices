@@ -53,13 +53,63 @@ def _tonumber(value: str, unit_prefix: str):
     return _StrDec(Decimal(value) * _unit_prefixes[unit_prefix])
 
 
+def _is_446_extra_space(string: str) -> bool:
+    suffixes = (
+        # Puxing PX-800/PX-820
+        '446,3-446, 4 МГц',
+        # Puxing PX-V9
+        '446,3-446, 4 МГц \n\n\n\n---\n430-440 МГц',
+        # Hytera MD785
+        '446,3-446, 4 МГц   ',
+        # Hytera PD405 U(1)
+        '446,3-446, 4 МГц '
+    )
+
+    for suffix in suffixes:
+        if string.endswith(suffix):
+            return True
+
+    return False
+
+
 def _apply_frequencies_fixes(string: str) -> str:
     if string == '2400-2483,5\n\n\n':
         # Missing units in HYUNDAI MOBIS ADB11H8EE
-        return string.replace('\n\n\n', 'МГц')
-    elif '137,585-137-825' in string:
+        return string[:-3] + 'МГц'
+    elif string == '27, 140-27,150 МГц\n':
+        # Erroneous space after decimal separator in MAISTO 82066/81322
+        return '27,140-27,150 МГц\n'
+    elif string == '13,56-13,56 МГц\n\n':
+        # Same starting and ending frequencies in Ridango DV15SE
+        return '13,56МГц'
+    elif string == '868,6-868,6 МГц':
+        # Same starting and ending frequencies in HDL-MCIP-RF.../HDL-MP...
+        return '868,6МГц'
+    elif string.endswith('5-137-825 МГц\n150-150,05 МГц    '):
         # Wrong decimal separator in two ORBCOMM devices
         return string.replace('137-825', '137,825')
+    elif string.endswith('6-467-1 МГц\n'):
+        # Wrong decimal separator in ATEL ADA-C450 and WeTelecom WM-D300
+        return string.replace('467-1', '467,1')
+    elif string.endswith('1477-1497б5 МГц'):
+        # Wrong decimal separator in two Airspan AS Wipll 1,5 devices
+        return string.replace('-1497б5', '-1497,5')
+    elif string.endswith('423-420 МГц\n440-442,125 МГц\n442,525-446 МГц\n446,4-447,725 МГц\n448,15-450 МГц'):
+        # Mixed starting and ending frequencies in Satelline-EASy
+        return string.replace('---\n413-430 МГц/\n423-420 МГц\n440-442,125 МГц\n', '')  # remove duplicates
+    elif string.endswith('\n18,3; 21,881;25,; 40,662; 43,756 кГц'):
+        # Missing units in SONY SVD112...
+        return string[:string.rfind('\n')] + ' 18,3кГц;21,881кГц;25кГц;40,662кГц;43,756кГц'
+    elif string.startswith('5250-5250 МГц'):
+        # Incorrect starting frequency in SkyMAN R5000-Sc/5L.54.63.22
+        return string.replace('5250-', '5150-')
+    elif string.startswith('8247-842,97 МГц'):
+        # Incorrect starting frequencies in Samsung SM-B311V (Gusto 3),
+        # LG LGL18VC (Classic), LG LG-VS425LPP (Optimus Zone 3)
+        return string.replace('8247-', '824,07-').replace('8697-', '869,07-')
+    elif _is_446_extra_space(string):
+        # Erroneous space after decimal separator
+        return string.replace('3-446, 4', '3-446,4')
 
     return string
 
@@ -74,7 +124,7 @@ def _parse_frequencies(string: str) -> list:
         start = _tonumber(freqstr[0], unit_prefix)
         frequency = [start]
 
-        if freqstr[1] != '':  # frequency range
+        if freqstr[1]:  # frequency range
             end = _tonumber(freqstr[1], unit_prefix)
 
             if start >= end:
