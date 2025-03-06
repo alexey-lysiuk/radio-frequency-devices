@@ -49,51 +49,51 @@ let textSearchValue = ''
 
 function Search(string, device, _)
 {
-	if (!Number.isNaN(frequencySearchValue))
-	{
-	    let found = false
+    if (!Number.isNaN(frequencySearchValue))
+    {
+        let found = false
 
         for (let frequency of device[columns.frequencies])
-	    {
-	        if (frequency.length == 1)
-	        {
-	            if (frequency[0] == frequencySearchValue)
-	            {
-	                found = true;
-	                break;
-	            }
-	        }
-	        else
-	        {
-	            if (frequencySearchValue >= frequency[0] && frequencySearchValue <= frequency[1])
-			    {
-	                found = true;
-	                break;
-	            }
-			}
+        {
+            if (frequency.length == 1)
+            {
+                if (frequency[0] == frequencySearchValue)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (frequencySearchValue >= frequency[0] && frequencySearchValue <= frequency[1])
+                {
+                    found = true;
+                    break;
+                }
+            }
         }
 
         if (!found)
             return false;
-	}
+    }
 
     if (textSearchValue != '')
     {
         return string.toLowerCase().includes(textSearchValue);
     }
 
-	return true;
+    return true;
 }
 
 $('#FrequencyInput').on('keyup', function()
 {
-	let value = FrequencyInput.value;
-	frequencySearchValue = value == '' ? NaN : Number(value);
-	table.search(Search).draw();
+    let value = FrequencyInput.value;
+    frequencySearchValue = value == '' ? NaN : Number(value);
+    table.search(Search).draw();
 });
 
 $('#TextInput').on('keyup', function()
 {
-	textSearchValue = TextInput.value.toLowerCase();
-	table.search(Search).draw();
+    textSearchValue = TextInput.value.toLowerCase();
+    table.search(Search).draw();
 });
