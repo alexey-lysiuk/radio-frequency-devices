@@ -27,7 +27,7 @@ let table = new DataTable('#devices',
         { title: 'Назва та тип РЕЗ або ВП, найменування виробника' },
         { title: 'Радіотехнології' },
         { title: 'Призначення' },
-        { title: 'Смуги радіочастот' }
+        { title: 'Смуги радіочастот, МГц' }
     ],
     data: devices,
     layout:
