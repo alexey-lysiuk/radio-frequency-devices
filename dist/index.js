@@ -41,6 +41,22 @@ let table = new DataTable('#devices',
             return toolbar;
         },
     },
+    language:
+    {
+        "info": "Показано від _START_ по _END_ з _TOTAL_ пристроїв",
+        "infoEmpty": "Показано 0 пристроїв",
+        "infoFiltered": "(відфільтровано з _MAX_ пристроїв)",
+        "lengthMenu": "Пристроїв на сторінці: _MENU_",
+        "paginate":
+        {
+            "first": "Перша",
+            "previous": "Попередня",
+            "next": "Наступна",
+            "last": "Остання"
+        },
+        "thousands": "",
+        "zeroRecords": "Не знайдено жодного пристрою",
+    },
     order: []
 });
 
