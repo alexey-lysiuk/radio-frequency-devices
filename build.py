@@ -20,7 +20,6 @@
 
 import csv
 import os
-import pathlib
 import re
 import sys
 from decimal import Decimal
@@ -231,8 +230,9 @@ class DeviceList:
             self._load_excel()
 
     def export(self):
-        self_path = pathlib.Path(__file__)
-        output_path = self_path.parent / 'dist/devices.js'
+        self_path = os.path.dirname(__file__)
+        output_path = os.path.join(self_path, 'dist', 'devices.js')
+        output_path = os.path.realpath(output_path)
 
         with open(output_path, 'w') as f:
             Device.write_pools(f)
