@@ -93,10 +93,8 @@ function Search(string, device, _)
             return false;
     }
 
-    if (textSearchValue != '')
-    {
+    if (textSearchValue)
         return string.toLowerCase().includes(textSearchValue);
-    }
 
     return true;
 }
