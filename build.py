@@ -232,7 +232,7 @@ class DeviceList:
 
     def export(self):
         self_path = pathlib.Path(__file__)
-        output_path = self_path.parent.parent / 'dist/devices.js'
+        output_path = self_path.parent / 'dist/devices.js'
 
         with open(output_path, 'w') as f:
             Device.write_pools(f)

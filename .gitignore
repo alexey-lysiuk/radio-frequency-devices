@@ -1,4 +1,11 @@
-/.idea/
+# Dependencies
+/et_xmlfile/
+/openpyxl/
+
+# Generated files
 /dist/devices.js
+
+# Temporary files
+/.idea/
 *.xlsx
 *.csv
