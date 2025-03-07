@@ -19,6 +19,7 @@ jobs:
       - name: Download source data
         run: |
           wget -q https://github.com/${{ github.repository }}/releases/download/data/devices.7z
+          wget -q https://github.com/${{ github.repository }}/releases/download/data/f531833n287.docx
           p7zip -d devices.7z
           mv devices.xlsx.csv ref.devices.xlsx.csv
 
