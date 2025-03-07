@@ -302,6 +302,17 @@ def _main():
         print(f'Usage: {sys.argv[0]} file.xlsx')
         sys.exit(1)
 
+    import docx
+    d = docx.Document('f531833n287.docx')
+    t = d.tables[0]
+
+    with open('f531833n287.docx.csv', 'w', newline='') as f:
+        w = csv.writer(f)
+
+        for row in t.rows:
+            row = [cell.text for cell in row.cells]
+            w.writerow(row)
+
     DeviceList(sys.argv[1]).export()
 
     sys.exit(0)
