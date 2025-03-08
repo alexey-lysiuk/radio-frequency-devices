@@ -303,15 +303,17 @@ def _main():
         sys.exit(1)
 
     import docx
-    d = docx.Document('f531833n287.docx')
-    t = d.tables[0]
 
-    with open('f531833n287.docx.csv', 'w', newline='') as f:
-        w = csv.writer(f)
+    for fn in ('f531833n287.docx', 'f531833n296.docx'):
+        d = docx.Document(fn)
+        t = d.tables[0]
 
-        for row in t.rows:
-            row = [cell.text for cell in row.cells]
-            w.writerow(row)
+        with open(fn + '.csv', 'w', newline='') as f:
+            w = csv.writer(f)
+
+            for row in t.rows:
+                row = [cell.text for cell in row.cells]
+                w.writerow(row)
 
     DeviceList(sys.argv[1]).export()
 
