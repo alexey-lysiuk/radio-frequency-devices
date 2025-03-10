@@ -297,27 +297,71 @@ class DeviceList:
                 self._add_device(row)
 
 
+class Spectrum:
+    def __init__(self, path: str):
+        self.path = path
+        self.bands = []
+
+        if not self._load_cache():
+            self._load_word()
+
+    def export(self):
+        self_path = os.path.dirname(__file__)
+        output_path = os.path.join(self_path, 'dist', 'spectrum.js')
+        output_path = os.path.realpath(output_path)
+
+        with open(output_path, 'w') as f:
+            for band in self.bands:
+                f.write('|'.join(band))  # TODO
+
+    def _add_band(self, row: list):
+        self.bands.append(row)  # TODO
+
+    def _cache_path(self) -> str:
+        return self.path + '.csv'
+
+    def _load_cache(self):
+        cache_path = self._cache_path()
+
+        if not os.path.exists(cache_path):
+            return False
+
+        source_time = os.stat(self.path).st_mtime
+        cache_time = os.stat(cache_path).st_mtime
+
+        if cache_time < source_time:
+            return False
+
+        with open(cache_path, newline='') as f:
+            reader = csv.reader(f)
+
+            for row in reader:
+                self._add_band(row)
+
+        return True
+
+    def _load_word(self):
+        import docx
+
+        document = docx.Document(self.path)
+        table = document.tables[0]
+
+        with open(self._cache_path(), 'w', newline='') as f:
+            cache_writer = csv.writer(f)
+
+            for word_row in table.rows:
+                row = [cell.text for cell in word_row.cells]
+                cache_writer.writerow(row)
+                self._add_band(row)
+
+
 def _main():
-    if len(sys.argv) != 2:
-        print(f'Usage: {sys.argv[0]} file.xlsx')
-        sys.exit(1)
+    argc = len(sys.argv)
+    devices_path = sys.argv[1] if argc >= 2 else 'devices.xlsx'
+    spectrum_path = sys.argv[2] if argc >= 3 else 'spectrum.docx'
 
-    import docx
-
-    for fn in ('f531833n287.docx', 'f531833n296.docx'):
-        d = docx.Document(fn)
-        t = d.tables[0]
-
-        with open(fn + '.csv', 'w', newline='') as f:
-            w = csv.writer(f)
-
-            for row in t.rows:
-                row = [cell.text for cell in row.cells]
-                w.writerow(row)
-
-    DeviceList(sys.argv[1]).export()
-
-    sys.exit(0)
+    DeviceList(devices_path).export()
+    Spectrum(spectrum_path).export()
 
 
 if __name__ == '__main__':
