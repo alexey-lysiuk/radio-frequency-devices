@@ -47,7 +47,7 @@ class _StrDec(Decimal):
         return str(self)
 
 
-def _tonumber(value: str, unit_prefix: str):
+def _tonumber(value: str, unit_prefix: str) -> _StrDec:
     value = value.replace(',', '.')
     return _StrDec(Decimal(value) * _unit_prefixes[unit_prefix])
 
@@ -297,10 +297,38 @@ class DeviceList:
                 self._add_device(row)
 
 
+def _spectrum_frequency(string: str) -> _StrDec:
+    frequencies = _parse_frequencies(string)
+    assert len(frequencies) == 1
+
+    frequency = frequencies[0]
+    assert len(frequency) == 1
+
+    return frequency[0]
+
+
+def _spectrum_string(string: str) -> str:
+    return string.replace('\n', '').replace('\xa0', ' ')
+
+
+class Band:
+    def __init__(self, row: list):
+        assert len(row) == 5
+        self.start = _spectrum_frequency(row[0])
+        self.end = _spectrum_frequency(row[1])
+        self.service1 = _spectrum_string(row[2])
+        self.service2 = _spectrum_string(row[3])
+        self.use = _spectrum_string(row[4])
+
+    def write(self, f):
+        f.write(f"[{self.start},{self.end},'{self.service1}','{self.service2}','{self.use}'],\n")
+
+
 class Spectrum:
     def __init__(self, path: str):
         self.path = path
         self.bands = []
+        self.skip_header = True
 
         if not self._load_cache():
             self._load_word()
@@ -311,11 +339,18 @@ class Spectrum:
         output_path = os.path.realpath(output_path)
 
         with open(output_path, 'w') as f:
+            f.write('const spectrum = [\n')
+
             for band in self.bands:
-                f.write('|'.join(band))  # TODO
+                band.write(f)
+
+            f.write('];\n')
 
     def _add_band(self, row: list):
-        self.bands.append(row)  # TODO
+        if self.skip_header:
+            self.skip_header = False
+        else:
+            self.bands.append(Band(row))
 
     def _cache_path(self) -> str:
         return self.path + '.csv'
