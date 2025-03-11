@@ -24,7 +24,7 @@ jobs:
 
       - name: Build device list
         run: |
-          ./build.py devices.xlsx
+          ./build.py
 
       - name: Post build checks
         run: |

@@ -298,13 +298,10 @@ class DeviceList:
 
 
 def _main():
-    if len(sys.argv) != 2:
-        print(f'Usage: {sys.argv[0]} file.xlsx')
-        sys.exit(1)
+    argc = len(sys.argv)
+    devices_path = sys.argv[1] if argc >= 2 else 'devices.xlsx'
 
-    DeviceList(sys.argv[1]).export()
-
-    sys.exit(0)
+    DeviceList(devices_path).export()
 
 
 if __name__ == '__main__':
