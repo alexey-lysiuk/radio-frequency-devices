@@ -164,7 +164,7 @@ class ValuePool(dict):
         return value
 
     def write(self, f, name):
-        f.write(f'{name}=[\n')
+        f.write(f'const {name}=[\n')
 
         for key in self.keys():
             f.write(f"'{key}',\n")
@@ -237,7 +237,7 @@ class DeviceList:
         with open(output_path, 'w') as f:
             Device.write_pools(f)
 
-            f.write('let devices = [\n')
+            f.write('const devices = [\n')
 
             for device in self.devices:
                 device.write(f)
