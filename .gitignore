@@ -1,11 +1,16 @@
 # Dependencies
+/docx/
 /et_xmlfile/
+/lxml/
 /openpyxl/
+/typing_extensions.py
 
 # Generated files
 /dist/devices.js
+/dist/spectrum.js
 
 # Temporary files
 /.idea/
-*.xlsx
 *.csv
+*.docx
+*.xlsx

@@ -14,13 +14,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install openpyxl
+          pip install openpyxl python-docx
 
       - name: Download source data
         run: |
-          wget -q https://github.com/${{ github.repository }}/releases/download/data/devices.7z
-          p7zip -d devices.7z
+          for f in devices spectrum; do
+            wget -q https://github.com/${{ github.repository }}/releases/download/data/$f.7z
+            p7zip -d $f.7z
+          done
           mv devices.xlsx.csv ref.devices.xlsx.csv
+          mv spectrum.docx.csv ref.spectrum.docx.csv
 
       - name: Build device list
         run: |
@@ -29,7 +32,9 @@ jobs:
       - name: Post build checks
         run: |
           [ -f dist/devices.js ] || exit 1
+          [ -f dist/spectrum.js ] || exit 1
           diff -u ref.devices.xlsx.csv devices.xlsx.csv
+          diff -u ref.spectrum.docx.csv spectrum.docx.csv
           git status
 
       - name: Upload site files as artifact

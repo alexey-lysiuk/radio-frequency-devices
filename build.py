@@ -47,7 +47,7 @@ class _StrDec(Decimal):
         return str(self)
 
 
-def _tonumber(value: str, unit_prefix: str):
+def _tonumber(value: str, unit_prefix: str) -> _StrDec:
     value = value.replace(',', '.')
     return _StrDec(Decimal(value) * _unit_prefixes[unit_prefix])
 
@@ -297,11 +297,107 @@ class DeviceList:
                 self._add_device(row)
 
 
+def _spectrum_frequency(string: str) -> _StrDec:
+    frequencies = _parse_frequencies(string)
+    assert len(frequencies) == 1
+
+    frequency = frequencies[0]
+    assert len(frequency) == 1
+
+    return frequency[0]
+
+
+def _spectrum_string(string: str) -> str:
+    return string.replace('\n', '').replace('\xa0', ' ')
+
+
+class Band:
+    def __init__(self, row: list):
+        assert len(row) == 5
+        self.start = _spectrum_frequency(row[0])
+        self.end = _spectrum_frequency(row[1])
+        self.service1 = _spectrum_string(row[2])
+        self.service2 = _spectrum_string(row[3])
+        self.use = _spectrum_string(row[4])
+
+    def write(self, f):
+        f.write(f"[{self.start},{self.end},'{self.service1}','{self.service2}','{self.use}'],\n")
+
+
+class Spectrum:
+    def __init__(self, path: str):
+        self.path = path
+        self.bands = []
+        self.skip_header = True
+
+        if not self._load_cache():
+            self._load_word()
+
+    def export(self):
+        self_path = os.path.dirname(__file__)
+        output_path = os.path.join(self_path, 'dist', 'spectrum.js')
+        output_path = os.path.realpath(output_path)
+
+        with open(output_path, 'w') as f:
+            f.write('const spectrum = [\n')
+
+            for band in self.bands:
+                band.write(f)
+
+            f.write('];\n')
+
+    def _add_band(self, row: list):
+        if self.skip_header:
+            self.skip_header = False
+        else:
+            self.bands.append(Band(row))
+
+    def _cache_path(self) -> str:
+        return self.path + '.csv'
+
+    def _load_cache(self):
+        cache_path = self._cache_path()
+
+        if not os.path.exists(cache_path):
+            return False
+
+        source_time = os.stat(self.path).st_mtime
+        cache_time = os.stat(cache_path).st_mtime
+
+        if cache_time < source_time:
+            return False
+
+        with open(cache_path, newline='') as f:
+            reader = csv.reader(f)
+
+            for row in reader:
+                self._add_band(row)
+
+        return True
+
+    def _load_word(self):
+        # noinspection PyUnresolvedReferences
+        import docx
+
+        document = docx.Document(self.path)
+        table = document.tables[0]
+
+        with open(self._cache_path(), 'w', newline='') as f:
+            cache_writer = csv.writer(f)
+
+            for word_row in table.rows:
+                row = [cell.text for cell in word_row.cells]
+                cache_writer.writerow(row)
+                self._add_band(row)
+
+
 def _main():
     argc = len(sys.argv)
     devices_path = sys.argv[1] if argc >= 2 else 'devices.xlsx'
+    spectrum_path = sys.argv[2] if argc >= 3 else 'spectrum.docx'
 
     DeviceList(devices_path).export()
+    Spectrum(spectrum_path).export()
 
 
 if __name__ == '__main__':
