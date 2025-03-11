@@ -282,9 +282,9 @@ class DeviceList:
         return True
 
     def _load_excel(self):
+        # noinspection PyUnresolvedReferences
         import openpyxl
 
-        # noinspection PyUnresolvedReferences
         workbook = openpyxl.open(self.path)
         worksheet = workbook.worksheets[0]
 
