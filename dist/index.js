@@ -20,6 +20,8 @@ for (let device of devices)
     }
 }
 
+let spectrumToolbar = document.createElement('div');
+
 let table = new DataTable('#devices',
 {
     columns:
@@ -32,7 +34,11 @@ let table = new DataTable('#devices',
     data: devices,
     layout:
     {
-        topEnd: function ()
+        topStart: null,
+        topEnd: null,
+        top: spectrumToolbar,
+        top2Start: 'pageLength',
+        top2End: function ()
         {
             let toolbar = document.createElement('div');
             toolbar.innerHTML =
@@ -102,7 +108,32 @@ function Search(string, device, _)
 $('#FrequencyInput').on('keyup', function()
 {
     let value = FrequencyInput.value;
-    frequencySearchValue = value == '' ? NaN : Number(value);
+    let frequency = value ? Number(value) : NaN;
+    let bands = Array();
+
+    if (!Number.isNaN(frequency))
+    {
+        for (let band of spectrum)
+        {
+            if (frequency >= band[0] && frequency <= band[1])
+                bands.push(band)
+        }
+    }
+
+    let bandsTable = '';
+
+    if (bands.length > 0)
+    {
+        bandsTable = '<table id="spectrum">';
+
+        for (let band of bands)
+            bandsTable += `<tr><td>${band[0]} - ${band[1]} МГц</td><td>${band[2]}</td><td>${band[3]}</td><td>${band[4]}</td></tr>`;
+
+        bandsTable += '</table>';
+    }
+
+    frequencySearchValue = frequency;
+    spectrumToolbar.innerHTML = bandsTable;
     table.search(Search).draw();
 });
 
