@@ -127,7 +127,7 @@ $('#FrequencyInput').on('keyup', function()
         bandsTable = '<table id="spectrum">';
 
         for (let band of bands)
-            bandsTable += `<tr><td>${band[0]} - ${band[1]} МГц</td><td>${band[2]}</td><td>${band[3]}</td><td>${band[4]}</td></tr>`;
+            bandsTable += `<tr><td>${band[0]}&nbsp;&#8288;-&#8288;&nbsp;${band[1]}</td><td>${band[2]}</td><td>${band[3]}</td><td>${band[4]}</td></tr>`;
 
         bandsTable += '</table>';
     }
