@@ -69,9 +69,14 @@ let table = new DataTable('#devices',
 let frequencySearchValue = NaN
 let textSearchValue = ''
 
+function IsValidSearchFrequency()
+{
+    return frequencySearchValue > 0 && frequencySearchValue <= 3_000_000;
+}
+
 function Search(string, device, _)
 {
-    if (!Number.isNaN(frequencySearchValue))
+    if (IsValidSearchFrequency())
     {
         let found = false
 
@@ -108,14 +113,15 @@ function Search(string, device, _)
 $('#FrequencyInput').on('keyup', function()
 {
     let value = FrequencyInput.value;
-    let frequency = value ? Number(value) : NaN;
     let bands = Array();
 
-    if (!Number.isNaN(frequency))
+    frequencySearchValue = value ? Number(value) : NaN;
+
+    if (IsValidSearchFrequency())
     {
         for (let band of spectrum)
         {
-            if (frequency >= band[0] && frequency <= band[1])
+            if (frequencySearchValue >= band[0] && frequencySearchValue <= band[1])
                 bands.push(band)
         }
     }
@@ -132,7 +138,6 @@ $('#FrequencyInput').on('keyup', function()
         bandsTable += '</table>';
     }
 
-    frequencySearchValue = frequency;
     spectrumToolbar.innerHTML = bandsTable;
     table.search(Search).draw();
 });
