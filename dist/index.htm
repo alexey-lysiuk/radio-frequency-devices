@@ -12,10 +12,29 @@
       {
         border-collapse: collapse;
       }
+
       table#spectrum td
       {
         border: 1px solid #888;
         padding: 1ex 1em 1ex;
+      }
+
+      .tooltiptext
+      {
+        visibility: hidden;
+        width: 30ex;
+        background-color: #444;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 1ex;
+        position: absolute;
+        z-index: 1;
+      }
+
+      .tooltip:hover .tooltiptext
+      {
+        visibility: visible;
       }
     </style>
   </head>

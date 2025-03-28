@@ -133,7 +133,34 @@ $('#FrequencyInput').on('keyup', function()
         bandsTable = '<table id="spectrum">';
 
         for (let band of bands)
-            bandsTable += `<tr><td>${band[0]}&nbsp;&#8288;-&#8288;&nbsp;${band[1]}</td><td>${band[2]}</td><td>${band[3]}</td><td>${band[4]}</td></tr>`;
+            bandsTable += `
+              <tr>
+                <td class="tooltip">
+                  ${band[0]}&nbsp;&#8288;-&#8288;&nbsp;${band[1]}
+                  <span class="tooltiptext">Смуга радіочастот, МГц</span>
+                </td>
+                <td class="tooltip">
+                  ${band[2]}
+                  <span class="tooltiptext">
+                    Служби радіозв’язку, яким розподілено відповідну смугу радіочастот,
+                    і номери приміток відповідно до Регламенту радіозв’язку для Району 1
+                  </span>
+                </td>
+                <td class="tooltip">
+                  ${band[3]}
+                  <span class="tooltiptext">
+                    Служби радіозв’язку, яким розподілено відповідну смугу радіочастот,
+                    і номери національних приміток в Україні
+                  </span>
+                </td>
+                <td class="tooltip">
+                  ${band[4]}
+                  <span class="tooltiptext">
+                    Розподіл смуг радіочастот на смуги
+                    спеціального користування та загального користування
+                  </span>
+                </td>
+              </tr>`;
 
         bandsTable += '</table>';
     }
